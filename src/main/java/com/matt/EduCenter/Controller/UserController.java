@@ -1,6 +1,7 @@
 package com.matt.EduCenter.Controller;
 import com.matt.EduCenter.Modelo.User;
 import com.matt.EduCenter.Service.UserService;
+import com.matt.EduCenter.dto.UserResponse;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +17,18 @@ public class UserController {
     }
 
     @GetMapping
-    public List<User> listarUsers() {
-        return userService.listarUsers();
+    public List<UserResponse> listarUsers() {
+
+        return userService.listarUsers().stream().map(user -> {
+                    UserResponse dto = new UserResponse();
+                    dto.setId(user.getId());
+                    dto.setNombre(user.getNombre());
+                    dto.setApellido(user.getApellido());
+                    dto.setEmail(user.getEmail());
+                    dto.setRol(user.getRol().name());
+                    return dto;
+                })
+                .toList();
     }
 
     @PostMapping
@@ -25,15 +36,4 @@ public class UserController {
         return userService.guardarUser(user);
     }
 
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User user){
-
-        try {
-            User usuarioLogueado = userService.login(user.getEmail(), user.getPassword());
-            return ResponseEntity.ok(usuarioLogueado);
-        } catch (RuntimeException e){
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
 }
