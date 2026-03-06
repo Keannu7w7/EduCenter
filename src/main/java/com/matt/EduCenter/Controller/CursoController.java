@@ -23,6 +23,7 @@ public class CursoController {
         return cursoService.crearCurso(curso);
     }
 
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','PROFESOR','ESTUDIANTE')")
     public List<Curso> listarCursos() {
