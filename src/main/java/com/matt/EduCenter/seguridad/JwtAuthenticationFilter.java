@@ -20,8 +20,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtService jwtService;
 
-    @Autowired
-    private UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -38,18 +36,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         userEmail = jwtService.extractUsername(jwt);
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userRepository.findByEmail(userEmail).orElse(null);
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            if (userDetails != null && jwtService.isTokenValid(jwt, userDetails)) {
+                if (jwtService.isTokenValid(jwt, userEmail)) {
 
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                    java.util.List<String> roles = jwtService.extractRoles(jwt);
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    java.util.List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
+                            roles.stream()
+                                    .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
+                                    .toList();
+
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userEmail,
+                                    null,
+                                    authorities
+                            );
+
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
         }
 

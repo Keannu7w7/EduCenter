@@ -27,15 +27,20 @@ public class JwtService {
 
     public String generateToken(UserDetails userDetails) {
 
-        String role = userDetails.getAuthorities().stream().findFirst().get().getAuthority();
-        return Jwts.builder().setSubject(userDetails.getUsername())
-                .claim("role", role)
+        return Jwts.builder()
+                .setSubject(userDetails.getUsername())
+                .claim("roles", userDetails.getAuthorities()
+                        .stream()
+                        .map(auth -> auth.getAuthority())
+                        .toList())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
-
+    public java.util.List<String> extractRoles(String token) {
+        return extractAllClaims(token).get("roles", java.util.List.class);
+    }
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSignKey())
@@ -49,8 +54,12 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername());
+    public boolean isTokenValid(String token, String username) {
+        final String extractedUsername = extractUsername(token);
+        return (extractedUsername.equals(username) && !isTokenExpired(token));
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 }
